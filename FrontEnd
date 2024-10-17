@@ -1,0 +1,48 @@
+import { Component, OnInit } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+
+@Component({
+  selector: 'app-seat-reservation',
+  template: `
+    <div>
+      <h1>Train Seat Reservation</h1>
+      <input type="number" [(ngModel)]="numSeats" placeholder="Enter number of seats" />
+      <button (click)="bookSeats()">Book Seats</button>
+      <div class="seat-layout">
+        <div *ngFor="let row of seats | keyvalue">
+          <div class="row">
+            <span *ngFor="let seat of row.value" [ngClass]="{'booked': seat.status}">
+              {{ seat.seat_id }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `,
+  styles: [
+    `.seat-layout { display: flex; flex-direction: column; }
+     .row { display: flex; margin-bottom: 5px; }
+     .booked { color: red; }`
+  ]
+})
+export class SeatReservationComponent implements OnInit {
+  numSeats: number = 1;
+  seats: any = [];
+
+  constructor(private http: HttpClient) {}
+
+  ngOnInit() {
+    this.http.get('/seats').subscribe((data: any) => this.seats = data);
+  }
+
+  bookSeats() {
+    this.http.post('/book', { numSeats: this.numSeats }).subscribe((response: any) => {
+      if (response.success) {
+        alert(`Seats booked: ${response.bookedSeats.map(seat => seat.seat_id).join(', ')}`);
+      } else {
+        alert(response.message);
+      }
+      this.ngOnInit(); // Refresh the seat layout after booking
+    });
+  }
+}
