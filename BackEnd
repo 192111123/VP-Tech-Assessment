@@ -1,0 +1,59 @@
+const express = require('express');
+const app = express();
+let seats = initializeSeats(); // function that initializes the seats
+
+app.get('/seats', (req, res) => {
+  res.json(seats);
+});
+
+app.post('/book', (req, res) => {
+  const numSeats = req.body.numSeats;
+  const bookedSeats = bookSeats(numSeats); // function that books the seats
+  if (bookedSeats) {
+    res.json({ success: true, bookedSeats });
+  } else {
+    res.json({ success: false, message: 'Not enough seats available' });
+  }
+});
+
+function initializeSeats() {
+  let seats = [];
+  // Create 80 seats in the coach (11 rows of 7 seats and 1 row of 3 seats)
+  for (let i = 1; i <= 80; i++) {
+    let row = Math.ceil(i / 7);
+    if (i > 77) row = 12; // last 3 seats in row 12
+    seats.push({ seat_id: i, row_id: row, status: false });
+  }
+  return seats;
+}
+
+function bookSeats(numSeats) {
+  // Logic to book seats row-wise or nearby
+  // Check if a full row is available first
+  let bookedSeats = [];
+  for (let row = 1; row <= 12; row++) {
+    let rowSeats = seats.filter(seat => seat.row_id === row && !seat.status);
+    if (rowSeats.length >= numSeats) {
+      bookedSeats = rowSeats.slice(0, numSeats);
+      break;
+    }
+  }
+  
+  // If no full row found, book nearby seats
+  if (bookedSeats.length === 0) {
+    bookedSeats = seats.filter(seat => !seat.status).slice(0, numSeats);
+  }
+
+  if (bookedSeats.length === numSeats) {
+    bookedSeats.forEach(seat => {
+      seat.status = true;
+    });
+    return bookedSeats;
+  }
+
+  return null;
+}
+
+app.listen(3000, () => {
+  console.log('Server is running on port 3000');
+});
